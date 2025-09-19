@@ -151,6 +151,11 @@ jobs:
         run: |
           ./fhevm-cli deploy
 
+      - name: Deploy Keys
+        working-directory: test-suite/fhevm
+        run: |
+          ./fhevm-cli keys deploy
+
       - name: Input proof test (uint64)
         working-directory: test-suite/fhevm
         run: |
@@ -185,6 +190,9 @@ jobs:
         working-directory: test-suite/fhevm
         if: always()
         run: |
+          echo "::group::Db Migration"
+          ./fhevm-cli logs db-migration
+          echo "::endgroup::"
           echo "::group::Relayer Logs"
           ./fhevm-cli logs relayer
           echo "::endgroup::"

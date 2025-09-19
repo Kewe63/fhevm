@@ -59,10 +59,6 @@ if [ "$TENANT_EXISTS" = "1" ]; then
     exit 0
 fi
 
-TMP_CSV="/tmp/tenant_data.csv"
-echo "tenant_api_key,chain_id,acl_contract_address,verifying_contract_address,pks_key,sks_key,public_params,sns_pk,key_id" > $TMP_CSV
-
-
 import_large_file() {
   local file="$1"
   local db_url="$2"
@@ -122,14 +118,17 @@ EOF
   echo "$oid"
 }
 
-echo "$TENANT_API_KEY,$CHAIN_ID,$ACL_CONTRACT_ADDRESS,$INPUT_VERIFIER_ADDRESS,NULL,NULL,NULL,NULL,\"$KEY_ID_HEX\"" >> $TMP_CSV
+echo "Fake OID"
+FAKE_KEY_FILE=$(mktemp)
+touch "$FAKE_KEY_FILE"
+SNS_PK_OID=$(import_large_file "$FAKE_KEY_FILE" "$DATABASE_URL")
 
 echo "----------- Tenant data prepared for insertion: $TMP_CSV -----------"
 
 echo "Inserting tenant data from CSV using \COPY..."
 psql "$DATABASE_URL" -c \
-  "INSERT INTO tenants (tenant_api_key, chain_id, acl_contract_address, verifying_contract_address, pks_key, sks_key, public_params, sns_pk, key_id)
-  VALUES ($TENANT_API_KEY,$CHAIN_ID,$ACL_CONTRACT_ADDRESS,$INPUT_VERIFIER_ADDRESS);" || {
+  "INSERT INTO tenants (tenant_api_key, chain_id, acl_contract_address, verifying_contract_address,pks_key,sks_key,public_params,sns_pk,key_id) \
+   VALUES ('$TENANT_API_KEY',$CHAIN_ID,'$ACL_CONTRACT_ADDRESS','$INPUT_VERIFIER_ADDRESS','','','',$SNS_PK_OID,'');" || {
     echo "Error: Failed to insert tenant data."; exit 1;
 }
 
