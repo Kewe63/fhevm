@@ -311,6 +311,12 @@ fi
 ${RUN_COMPOSE} "host-node" "Host node service" "${PROJECT}-host-node:running"
 ${RUN_COMPOSE} "gateway-node" "Gateway node service" "${PROJECT}-gateway-node:running"
 
+# Setup Gateway contracts and network
+${RUN_COMPOSE} "gateway" "Gateway contracts" \
+    "${PROJECT}-gateway-sc-deploy:complete" \
+    "${PROJECT}-gateway-sc-add-network:complete"
+
+sleep 5
 # Run coprocessor services
 ${RUN_COMPOSE} "coprocessor" "Coprocessor Services" \
     "${PROJECT}-coprocessor-db:running" \
@@ -332,10 +338,6 @@ ${RUN_COMPOSE} "connector" "Connector Services" \
 ${RUN_COMPOSE} "relayer" "Relayer Services" \
     "${PROJECT}-relayer:running"
 
-# Setup Gateway contracts and network
-${RUN_COMPOSE} "gateway" "Gateway contracts" \
-    "${PROJECT}-gateway-sc-deploy:complete" \
-    "${PROJECT}-gateway-sc-add-network:complete"
 
 # Setup Host contracts
 ${RUN_COMPOSE} "host" "Host contracts" "${PROJECT}-host-sc-deploy:complete"
@@ -344,3 +346,23 @@ ${RUN_COMPOSE} "host" "Host contracts" "${PROJECT}-host-sc-deploy:complete"
 ${RUN_COMPOSE} "test-suite" "Test Suite E2E Tests" "${PROJECT}-test-suite-e2e-debug:running"
 
 log_info "All services started successfully!"
+
+log_info "Starting crs & keygen"
+
+cd ${SCRIPT_DIR}/../../../gateway-contracts
+
+DOTENV_CONFIG_PATH=.env.example HARDHAT_NETWORK=staging CHAIN_ID_GATEWAY=54321 RPC_URL=http://localhost:8546 npx hardhat task:triggerCrsgen \
+    --max-bit-length 2048 \
+    --params-type 1 \
+    --use-internal-kms-management-address true
+
+DOTENV_CONFIG_PATH=.env.example HARDHAT_NETWORK=staging CHAIN_ID_GATEWAY=54321 RPC_URL=http://localhost:8546 npx hardhat task:triggerKeygen \
+    --params-type 1 \
+    --use-internal-kms-management-address true
+
+
+log_info "Get crs & keygen"
+
+DOTENV_CONFIG_PATH=.env.example HARDHAT_NETWORK=staging CHAIN_ID_GATEWAY=54321 RPC_URL=http://localhost:8546 npx hardhat task:getCrs
+
+DOTENV_CONFIG_PATH=.env.example HARDHAT_NETWORK=staging CHAIN_ID_GATEWAY=54321 RPC_URL=http://localhost:8546 npx hardhat task:getKey
