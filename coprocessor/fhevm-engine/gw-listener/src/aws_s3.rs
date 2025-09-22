@@ -40,6 +40,7 @@ pub async fn create_s3_client(retry_policy: &S3Policy) -> aws_sdk_s3::Client {
     let config = Builder::from(&sdk_config)
         .timeout_config(timeout_config)
         .retry_config(retry_config)
+        .endpoint_url("http://minio:9000/") // TODO clear
         .build();
 
     Client::from_conf(config)
@@ -57,11 +58,13 @@ pub struct AwsS3Client {
 }
 
 impl AwsS3Interface for AwsS3Client {
-    async fn get_bucket_key(&self, bucket: &str, key: &str) -> anyhow::Result<bytes::Bytes> {
+    async fn get_bucket_key(&self, _url_and_bucket: &str, key: &str) -> anyhow::Result<bytes::Bytes> {
+        // let parsed_url_and_bucket = url::Url::parse(_url_and_bucket)?;
+        // let url = parsed_url_and_bucket.
         let result = self
             .s3_client
             .get_object()
-            .bucket(bucket)
+            .bucket("kms-public")
             .key(key)
             .send()
             .await?;
